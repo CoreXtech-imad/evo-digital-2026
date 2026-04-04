@@ -1,0 +1,81 @@
+rules_version = '2';
+
+// =====================================================
+// EVO DIGITAL — Firestore Security Rules
+// =====================================================
+// Deploy with: firebase deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ─────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidEmail(email) {
+      return email.matches('.*@.*\\..*');
+    }
+
+    function isValidPhone(phone) {
+      return phone.size() >= 8 && phone.size() <= 20;
+    }
+
+    function isValidOrder() {
+      let data = request.resource.data;
+      return
+        data.customer.name is string && data.customer.name.size() >= 2 &&
+        isValidEmail(data.customer.email) &&
+        isValidPhone(data.customer.phone) &&
+        data.customer.wilaya is string &&
+        data.items is list && data.items.size() > 0 &&
+        data.total is number && data.total > 0 &&
+        data.paymentMethod == 'cod' &&
+        data.status == 'pending';
+    }
+
+    // ── Products ─────────────────────────────────────
+    // Public read, server-only write (via Admin SDK)
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if false; // Admin SDK only
+    }
+
+    // ── Orders ───────────────────────────────────────
+    // Anyone can create a valid order
+    // No client-side reads (sensitive data — Admin SDK only)
+    match /orders/{orderId} {
+      allow create: if isValidOrder();
+      allow read, update, delete: if false; // Admin SDK only
+    }
+
+    // ── Reviews ──────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if
+        request.resource.data.productId is string &&
+        request.resource.data.rating is number &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+        request.resource.data.comment is string &&
+        request.resource.data.comment.size() >= 10 &&
+        request.resource.data.comment.size() <= 500 &&
+        request.resource.data.customerName is string;
+      allow update, delete: if false;
+    }
+
+    // ── Subscribers (newsletter) ──────────────────────
+    match /subscribers/{subId} {
+      allow create: if
+        request.resource.data.email is string &&
+        isValidEmail(request.resource.data.email);
+      allow read, update, delete: if false;
+    }
+
+    // ── Deny all other reads/writes ───────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

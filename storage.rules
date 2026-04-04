@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// =====================================================
+// EVO DIGITAL — Firebase Storage Security Rules
+// =====================================================
+// Deploy with: firebase deploy --only storage
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Product images (public read) ─────────────────
+    match /images/{allPaths=**} {
+      allow read: if true;
+      allow write: if false; // Admin SDK only
+    }
+
+    // ── Digital product files (NO public access) ─────
+    // Files are served only via signed URLs generated
+    // server-side in /api/download route
+    match /products/{allPaths=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ── Thumbnails / previews ────────────────────────
+    match /previews/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ── Deny everything else ─────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
