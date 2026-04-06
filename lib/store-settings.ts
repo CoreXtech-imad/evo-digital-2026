@@ -38,9 +38,10 @@ export async function getStoreSettings(): Promise<StoreSettings> {
     const docs = await localDb.collection("settings").getAll();
     const doc  = docs.find((d: any) => d.id === "store");
     if (doc) {
-      _cache = { ...DEFAULT_STORE, ...doc };
+      const result = { ...DEFAULT_STORE, ...doc };
+      _cache = result;
       _cacheTime = Date.now();
-      return _cache;
+      return result;
     }
   } catch {}
 
