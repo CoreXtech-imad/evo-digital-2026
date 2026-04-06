@@ -152,7 +152,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
         <div className="flex gap-2">
           <a
-            href={`https://wa.me/${order.customer.phone.replace(/\D/g, "")}?text=Bonjour ${order.customer.name}, concernant votre commande ${order.orderNumber} sur Evo Digital...`}
+            href={`https://wa.me/${(order.customer.phone ?? "").replace(/\D/g, "")}?text=Bonjour ${order.customer.name ?? ""}, concernant votre commande ${order.orderNumber} sur Evo Digital...`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-all text-sm font-bold"
@@ -377,7 +377,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   {order.customer.email}
                 </a>
                 <button
-                  onClick={() => copyToClipboard(order.customer.email, "Email")}
+                  onClick={() => copyToClipboard(order.customer.email ?? "", "Email")}
                   className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Copy className="w-3.5 h-3.5 text-on-surface-variant hover:text-primary" />
@@ -392,7 +392,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   {order.customer.phone}
                 </a>
                 <button
-                  onClick={() => copyToClipboard(order.customer.phone, "Téléphone")}
+                  onClick={() => copyToClipboard(order.customer.phone ?? "", "Téléphone")}
                   className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Copy className="w-3.5 h-3.5 text-on-surface-variant hover:text-primary" />
@@ -448,7 +448,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <h2 className="font-bold font-headline text-sm mb-3">Actions rapides</h2>
             <div className="space-y-2">
               <a
-                href={`https://wa.me/${order.customer.phone.replace(/\D/g, "")}?text=Bonjour ${order.customer.name}! Votre commande ${order.orderNumber} a été confirmée. Merci pour votre achat sur Evo Digital! 🎉`}
+                href={`https://wa.me/${(order.customer.phone ?? "").replace(/\D/g, "")}?text=Bonjour ${order.customer.name ?? ""}! Votre commande ${order.orderNumber} a été confirmée. Merci pour votre achat sur Evo Digital! 🎉`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2.5 p-3 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-all text-sm font-medium"
