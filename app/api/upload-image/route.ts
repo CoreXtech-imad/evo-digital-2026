@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { requireRole } from "@/lib/admin-auth";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
@@ -15,61 +13,28 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
-    if (!file) {
-      return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
-    }
+    if (!file) return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
+    if (!ALLOWED_TYPES.includes(file.type))
+      return NextResponse.json({ error: "Type non supporté. Utilisez JPG, PNG ou WebP." }, { status: 400 });
+    if (file.size > MAX_SIZE)
+      return NextResponse.json({ error: "Fichier trop volumineux. Maximum 5 MB." }, { status: 400 });
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF." },
-        { status: 400 }
-      );
-    }
-
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { error: "Fichier trop volumineux. Maximum 5 MB." },
-        { status: 400 }
-      );
-    }
-
-    // Try Firebase Storage first
-    try {
-      const { getAdminStorage } = await import("@/lib/firebase-admin");
-      const storage = getAdminStorage();
-      const bucket = storage.bucket();
-
-      const ext = file.name.split(".").pop() || "jpg";
-      const filename = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const fileRef = bucket.file(filename);
-
-      await fileRef.save(buffer, {
-        metadata: { contentType: file.type },
-        public: true,
-      });
-
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
-      return NextResponse.json({ url: publicUrl, size: file.size });
-    } catch {
-      // Firebase Storage not configured — save locally
-    }
-
-    // Local fallback: save to /tmp on Vercel, public/uploads locally
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const uploadDir = process.env.VERCEL
-      ? path.join("/tmp", "uploads", "images")
-      : path.join(process.cwd(), "public", "uploads", "images");
-
-    await mkdir(uploadDir, { recursive: true });
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(uploadDir, safeName), buffer);
+    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
 
-    // On Vercel /tmp files aren't publicly accessible — return a placeholder
-    const url = process.env.VERCEL ? "" : `/uploads/images/${safeName}`;
-    return NextResponse.json({ url, size: file.size });
+    const { v2: cloudinary } = await import("cloudinary");
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key:    process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+
+    const result = await cloudinary.uploader.upload(base64, {
+      folder: "evo-digital/products",
+      transformation: [{ quality: "auto", fetch_format: "auto" }],
+    });
+
+    return NextResponse.json({ url: result.secure_url, size: file.size });
   } catch (error) {
     console.error("Image upload error:", error);
     return NextResponse.json({ error: "Erreur lors de l'upload" }, { status: 500 });
