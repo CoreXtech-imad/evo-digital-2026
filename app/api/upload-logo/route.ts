@@ -39,8 +39,12 @@ export async function POST(request: NextRequest) {
   // Local fallback
   const ext      = file.name.split(".").pop()?.toLowerCase() || "png";
   const filename = `${type}.${ext}`;
-  const dir      = path.join(process.cwd(), "public", "uploads", "logos");
+  const dir = process.env.VERCEL
+    ? path.join("/tmp", "uploads", "logos")
+    : path.join(process.cwd(), "public", "uploads", "logos");
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
-  return NextResponse.json({ url: `/uploads/logos/${filename}` });
+  // On Vercel /tmp isn't publicly accessible — Firebase Storage must be configured
+  const url = process.env.VERCEL ? "" : `/uploads/logos/${filename}`;
+  return NextResponse.json({ url });
 }

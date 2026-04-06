@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { isAdminAuthenticated } from "@/lib/utils";
+import { requireRole } from "@/lib/admin-auth";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
@@ -56,16 +56,19 @@ export async function POST(request: NextRequest) {
       // Firebase Storage not configured — save locally
     }
 
-    // Local fallback: save to public/uploads/images/
+    // Local fallback: save to /tmp on Vercel, public/uploads locally
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "images");
+    const uploadDir = process.env.VERCEL
+      ? path.join("/tmp", "uploads", "images")
+      : path.join(process.cwd(), "public", "uploads", "images");
 
     await mkdir(uploadDir, { recursive: true });
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(path.join(uploadDir, safeName), buffer);
 
-    const url = `/uploads/images/${safeName}`;
+    // On Vercel /tmp files aren't publicly accessible — return a placeholder
+    const url = process.env.VERCEL ? "" : `/uploads/images/${safeName}`;
     return NextResponse.json({ url, size: file.size });
   } catch (error) {
     console.error("Image upload error:", error);
