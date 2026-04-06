@@ -97,8 +97,8 @@ export default function AdminOrdersPage() {
       (o) =>
         !search ||
         o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-        o.customer.name.toLowerCase().includes(search.toLowerCase()) ||
-        o.customer.phone.includes(search)
+        (o.customer.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (o.customer.phone ?? "").includes(search)
     );
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
@@ -395,7 +395,7 @@ export default function AdminOrdersPage() {
 
               {/* WhatsApp */}
               <a
-                href={`https://wa.me/${selectedOrder.customer.phone.replace(/\D/g, "")}?text=Bonjour ${selectedOrder.customer.name}, concernant votre commande ${selectedOrder.orderNumber}...`}
+                href={`https://wa.me/${(selectedOrder.customer.phone ?? "").replace(/\D/g, "")}?text=Bonjour ${selectedOrder.customer.name ?? ""}, concernant votre commande ${selectedOrder.orderNumber}...`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-all text-sm font-bold"
