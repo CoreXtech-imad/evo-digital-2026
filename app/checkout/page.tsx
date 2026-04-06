@@ -21,7 +21,9 @@ export default function CheckoutPage() {
   const [settings, setSettings]   = useState<CheckoutSettings>(DEFAULT_SETTINGS);
   const [form, setForm]           = useState<Record<string, string>>({});
   const [errors, setErrors]       = useState<Record<string, string>>({});
-  const [selectedPayment, setSelectedPayment] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState(
+    DEFAULT_SETTINGS.paymentMethods.find((m) => m.enabled)?.id ?? ""
+  );
 
   // Load checkout settings
   useEffect(() => {
@@ -59,17 +61,19 @@ export default function CheckoutPage() {
       if (field.key === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
         newErrors[field.key] = "Email invalide";
       }
-      if (field.key === "phone" && !/^[0-9+\s-]{8,}$/.test(val)) {
-        newErrors[field.key] = "Numéro de téléphone invalide";
+      // Permissive phone: at least 7 digits anywhere in the string
+      if (field.key === "phone" && (val.replace(/\D/g, "").length < 7)) {
+        newErrors[field.key] = "Numéro de téléphone invalide (min 7 chiffres)";
       }
-      if (field.key === "name" && val.length < 3) {
-        newErrors[field.key] = "Le nom doit contenir au moins 3 caractères";
-      }
-      if (field.key === "address" && val.length < 5) {
-        newErrors[field.key] = "Adresse trop courte";
+      if (field.key === "name" && val.length < 2) {
+        newErrors[field.key] = "Le nom doit contenir au moins 2 caractères";
       }
     }
-    if (!selectedPayment) newErrors["payment"] = "Veuillez sélectionner un mode de paiement";
+    // Auto-pick first payment if none selected
+    const firstPayment = enabledPayments[0]?.id;
+    const payment = selectedPayment || firstPayment || "";
+    if (!payment) newErrors["payment"] = "Veuillez sélectionner un mode de paiement";
+    else if (!selectedPayment) setSelectedPayment(payment);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
