@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthenticated } from "@/lib/utils";
+import { requireRole } from "@/lib/admin-auth";
 
 export const config = {
   api: { bodyParser: false },
 };
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 

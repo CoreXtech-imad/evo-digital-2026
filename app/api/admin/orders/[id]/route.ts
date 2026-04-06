@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthenticated } from "@/lib/utils";
+import { requireRole } from "@/lib/admin-auth";
 import { createHmac } from "crypto";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
@@ -77,7 +77,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 

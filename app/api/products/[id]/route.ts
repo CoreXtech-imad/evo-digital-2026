@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthenticated, slugify } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
+import { requireRole } from "@/lib/admin-auth";
 import { localDb } from "@/lib/local-db";
 
 export async function GET(
@@ -30,7 +31,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
@@ -61,7 +62,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 

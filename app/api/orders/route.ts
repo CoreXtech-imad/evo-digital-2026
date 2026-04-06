@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { generateOrderNumber, sanitizeInput, isAdminAuthenticated } from "@/lib/utils";
+import { generateOrderNumber, sanitizeInput } from "@/lib/utils";
+import { requireRole } from "@/lib/admin-auth";
 
 const orderSchema = z.object({
   customer: z.record(z.string().max(500)),
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
   try {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { slugify, isAdminAuthenticated } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
+import { requireRole } from "@/lib/admin-auth";
 import { localDb } from "@/lib/local-db";
 
 export async function GET(request: NextRequest) {
@@ -58,7 +59,7 @@ const productSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 

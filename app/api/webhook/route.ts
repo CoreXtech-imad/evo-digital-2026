@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminAuthenticated } from "@/lib/utils";
+import { requireRole } from "@/lib/admin-auth";
 
 // POST /api/webhook — Send a test webhook to verify the integration
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
 // GET /api/webhook — Check webhook configuration status
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthenticated(request)) {
+  if (!requireRole(request, "manager")) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
