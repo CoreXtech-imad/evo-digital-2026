@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
-    data.customer.name = sanitizeInput(data.customer.name);
-    data.customer.address = sanitizeInput(data.customer.address);
-    if (data.customer.notes) data.customer.notes = sanitizeInput(data.customer.notes);
+    if (data.customer.name)    data.customer.name    = sanitizeInput(data.customer.name);
+    if (data.customer.address) data.customer.address = sanitizeInput(data.customer.address);
+    if (data.customer.notes)   data.customer.notes   = sanitizeInput(data.customer.notes);
 
     const orderNumber = generateOrderNumber();
     let orderId = `demo-${Date.now()}`;
