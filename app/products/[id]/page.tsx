@@ -80,12 +80,22 @@ const demoProducts: Record<string, Product> = {
 };
 
 async function getProduct(slug: string): Promise<Product | null> {
+  // 1. Try Firebase
   try {
     const { getAdminDb } = await import("@/lib/firebase-admin");
     const db = getAdminDb();
     const snap = await db.collection("products").where("slug", "==", slug).limit(1).get();
     if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() } as Product;
   } catch {}
+
+  // 2. Try local DB (file-based fallback)
+  try {
+    const { localDb } = await import("@/lib/local-db");
+    const product = await localDb.collection("products").getBySlug(slug);
+    if (product) return product as Product;
+  } catch {}
+
+  // 3. Fall back to hardcoded demo products
   return demoProducts[slug] ?? null;
 }
 
@@ -117,6 +127,7 @@ export async function generateStaticParams() {
 }
 
 export const revalidate = 3600;
+export const dynamicParams = true;
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
