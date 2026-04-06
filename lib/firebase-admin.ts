@@ -14,7 +14,11 @@ function getAdminApp(): any | null {
     const { getApps, initializeApp, cert } = require("firebase-admin/app");
     if (getApps().length > 0) return getApps()[0];
 
-    const privateKey = (process.env.FIREBASE_ADMIN_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
+    let privateKey = (process.env.FIREBASE_ADMIN_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
+    // Strip surrounding quotes that Vercel sometimes adds when pasting
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
 
     return initializeApp({
       credential: cert({

@@ -22,19 +22,23 @@ async function getDb() {
 // ── Ensure a default super_admin exists ──────────────────────────────────────
 
 export async function ensureDefaultAdmin(): Promise<void> {
-  const users = await getAllAdminUsers();
-  if (users.length > 0) return;
+  try {
+    const users = await getAllAdminUsers();
+    if (users.length > 0) return;
 
-  const defaultUsername = process.env.ADMIN_USERNAME || "admin";
-  const defaultPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
+    const defaultUsername = process.env.ADMIN_USERNAME || "admin";
+    const defaultPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
 
-  await createAdminUser({
-    username: defaultUsername,
-    name:     "Super Admin",
-    role:     "super_admin",
-    password: defaultPassword,
-    active:   true,
-  });
+    await createAdminUser({
+      username: defaultUsername,
+      name:     "Super Admin",
+      role:     "super_admin",
+      password: defaultPassword,
+      active:   true,
+    });
+  } catch {
+    // If seeding fails (e.g. Firebase not yet ready), proceed — login will fail gracefully
+  }
 }
 
 // ── CRUD ─────────────────────────────────────────────────────────────────────
