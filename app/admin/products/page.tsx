@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus, Search, Edit, Trash2, Eye, Package,
-  Star, Flame, Zap, X, Loader2, Upload, RefreshCw,
+  Star, Flame, Zap, X, Loader2, Upload, RefreshCw, ImagePlus,
 } from "lucide-react";
 import { Product, ProductCategory } from "@/types";
 import { formatDZD, getDiscountPercentage } from "@/lib/utils";
@@ -87,11 +87,38 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch products from API on mount
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const adminKey = getAdminKey();
+      const res = await fetch("/api/upload-image", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${adminKey}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erreur upload");
+      }
+      const data = await res.json();
+      setForm((prev) => ({ ...prev, imageUrl: data.url }));
+      toast.success("Image uploadée!");
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de l'upload de l'image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoadingProducts(true);
@@ -189,22 +216,16 @@ export default function AdminProductsPage() {
           body: JSON.stringify(productData),
         });
 
-        if (res.ok) {
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === editingProduct.id ? { ...p, ...productData, updatedAt: new Date().toISOString() } : p
-            )
-          );
-          toast.success("Produit mis à jour!");
-        } else {
-          // Fallback: update locally
-          setProducts((prev) =>
-            prev.map((p) =>
-              p.id === editingProduct.id ? { ...p, ...productData, updatedAt: new Date().toISOString() } : p
-            )
-          );
-          toast.success("Produit mis à jour (local)");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Erreur ${res.status}`);
         }
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === editingProduct.id ? { ...p, ...productData, updatedAt: new Date().toISOString() } : p
+          )
+        );
+        toast.success("Produit mis à jour!");
       } else {
         // Create new product
         const res = await fetch("/api/products", {
@@ -216,38 +237,28 @@ export default function AdminProductsPage() {
           body: JSON.stringify(productData),
         });
 
-        if (res.ok) {
-          const result = await res.json();
-          const newProduct: Product = {
-            id: result.id || `new-${Date.now()}`,
-            slug: result.slug || form.name.toLowerCase().replace(/\s+/g, "-"),
-            sold: 0, rating: 0, reviewCount: 0, stock: -1,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            ...productData,
-            images: productData.images,
-          } as Product;
-          setProducts((prev) => [newProduct, ...prev]);
-          toast.success("Produit ajouté!");
-        } else {
-          // Fallback: add locally
-          const newProduct: Product = {
-            id: `new-${Date.now()}`,
-            slug: form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-            sold: 0, rating: 0, reviewCount: 0, stock: -1,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            ...productData,
-            images: productData.images,
-          } as Product;
-          setProducts((prev) => [newProduct, ...prev]);
-          toast.success("Produit ajouté (local)");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Erreur ${res.status}`);
         }
+
+        const result = await res.json();
+        const newProduct: Product = {
+          id: result.id || `new-${Date.now()}`,
+          slug: result.slug || form.name.toLowerCase().replace(/\s+/g, "-"),
+          sold: 0, rating: 0, reviewCount: 0, stock: -1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...productData,
+          images: productData.images,
+        } as Product;
+        setProducts((prev) => [newProduct, ...prev]);
+        toast.success("Produit ajouté!");
       }
 
       setShowForm(false);
-    } catch {
-      toast.error("Erreur lors de la sauvegarde");
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la sauvegarde");
     } finally {
       setSaving(false);
     }
@@ -565,13 +576,40 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-on-surface-variant mb-1.5">URL de l&apos;image</label>
-                  <input
-                    value={form.imageUrl}
-                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                    placeholder="https://..."
-                    className="input-field"
-                  />
+                  <label className="block text-sm font-medium text-on-surface-variant mb-1.5">Image du produit</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={form.imageUrl}
+                      onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                      placeholder="URL ou uploadez depuis votre appareil →"
+                      className="input-field flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="btn-secondary flex items-center gap-1.5 px-4 py-2 text-sm whitespace-nowrap disabled:opacity-60"
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ImagePlus className="w-4 h-4" />
+                      )}
+                      {uploadingImage ? "Upload..." : "Depuis l'appareil"}
+                    </button>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-on-surface-variant mt-1">JPG, PNG, WebP ou GIF — max 5 MB</p>
                   {form.imageUrl && (
                     <div className="mt-2 relative w-20 h-20 rounded-xl overflow-hidden bg-surface-container-high">
                       <Image src={form.imageUrl} alt="Preview" fill className="object-cover" sizes="80px" />

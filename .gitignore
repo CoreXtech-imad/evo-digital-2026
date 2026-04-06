@@ -43,3 +43,9 @@ next-env.d.ts
 .vscode/
 *.swp
 *.swo
+
+# Local database (file-based fallback when Firebase is not configured)
+data/*.json
+
+# Uploaded images (local dev)
+public/uploads/

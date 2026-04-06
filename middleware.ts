@@ -34,12 +34,25 @@ export function middleware(request: NextRequest) {
   }
 
   // ─── Block direct access to admin API routes ─────────────────────────────────
-  // Allow the verify endpoint through (it handles its own auth)
-  if (pathname.startsWith("/api/admin/") && !pathname.startsWith("/api/admin/verify")) {
-    const authHeader = request.headers.get("authorization");
+  // Login and verify endpoints handle their own auth — let them through
+  const isPublicAdminRoute =
+    pathname.startsWith("/api/admin/verify") ||
+    pathname.startsWith("/api/admin/login");
+
+  if (pathname.startsWith("/api/admin/") && !isPublicAdminRoute) {
+    const authHeader = request.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "").trim();
     const adminKey = process.env.ADMIN_SECRET_KEY;
 
-    if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    // Accept legacy single key OR any non-empty bearer token (validated fully in route handlers)
+    if (!token || token.length < 10) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    // Hard-block if it's clearly not a valid key or token
+    const isLegacyKey = adminKey && token === adminKey;
+    const looksLikeToken = token.includes(".") || token.length >= 32;
+    if (!isLegacyKey && !looksLikeToken) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
   }

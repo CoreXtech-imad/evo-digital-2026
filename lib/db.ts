@@ -124,6 +124,7 @@ export async function updateOrderStatus(id: string, status: Order["status"]): Pr
 export async function incrementProductSold(productId: string): Promise<void> {
   try {
     const db = await adminDb();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { FieldValue } = require("firebase-admin/firestore");
     await db.collection("products").doc(productId).update({
       sold: FieldValue.increment(1),

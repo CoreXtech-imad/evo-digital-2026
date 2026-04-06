@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductDetailClient from "./ProductDetailClient";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { Product } from "@/types";
 
 const demoProducts: Record<string, Product> = {
@@ -87,8 +89,9 @@ async function getProduct(slug: string): Promise<Product | null> {
   return demoProducts[slug] ?? null;
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const product = await getProduct(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProduct(id);
   if (!product) return { title: "Produit introuvable | Evo Digital" };
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://evo-digital.vercel.app";
   return {
@@ -107,7 +110,7 @@ export async function generateStaticParams() {
     const { getAdminDb } = await import("@/lib/firebase-admin");
     const db = getAdminDb();
     const snap = await db.collection("products").get();
-    return snap.docs.map((d) => ({ id: (d.data() as Product).slug }));
+    return snap.docs.map((d: any) => ({ id: (d.data() as Product).slug }));
   } catch {
     return Object.keys(demoProducts).map((slug) => ({ id: slug }));
   }
@@ -115,17 +118,24 @@ export async function generateStaticParams() {
 
 export const revalidate = 3600;
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
-  const product = await getProduct(params.id);
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const product = await getProduct(id);
   if (!product) notFound();
   let related: Product[] = [];
   try {
     const { getAdminDb } = await import("@/lib/firebase-admin");
     const db = getAdminDb();
     const snap = await db.collection("products").where("category", "==", product.category).limit(4).get();
-    related = snap.docs.filter((d) => d.id !== product.id).slice(0, 3).map((d) => ({ id: d.id, ...d.data() } as Product));
+    related = snap.docs.filter((d: any) => d.id !== product!.id).slice(0, 3).map((d: any) => ({ id: d.id, ...d.data() } as Product));
   } catch {
     related = Object.values(demoProducts).filter((p) => p.category === product.category && p.id !== product.id).slice(0, 3);
   }
-  return <ProductDetailClient product={product} related={related} />;
+  return (
+    <>
+      <Navbar />
+      <ProductDetailClient product={product} related={related} />
+      <Footer />
+    </>
+  );
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Manrope } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -41,6 +41,9 @@ export const metadata: Metadata = {
     description: "Téléchargez des logiciels premium, templates, outils et plus encore.",
   },
   robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
   themeColor: "#0e0e0e",
 };
 

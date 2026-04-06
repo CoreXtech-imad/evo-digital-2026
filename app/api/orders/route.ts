@@ -3,25 +3,18 @@ import { z } from "zod";
 import { generateOrderNumber, sanitizeInput, isAdminAuthenticated } from "@/lib/utils";
 
 const orderSchema = z.object({
-  customer: z.object({
-    name: z.string().min(2).max(100),
-    email: z.string().email(),
-    phone: z.string().min(8).max(20),
-    wilaya: z.string().min(1).max(50),
-    city: z.string().min(2).max(100),
-    address: z.string().min(5).max(500),
-    notes: z.string().max(500).optional(),
-  }),
+  customer: z.record(z.string().max(500)),
   items: z.array(z.object({
-    productId: z.string(),
-    productName: z.string(),
+    productId:    z.string(),
+    productName:  z.string(),
     productImage: z.string(),
-    price: z.number().positive(),
-    quantity: z.number().int().positive(),
+    price:        z.number().positive(),
+    quantity:     z.number().int().positive(),
   })).min(1),
-  subtotal: z.number().positive(),
-  total: z.number().positive(),
-  paymentMethod: z.literal("cod"),
+  subtotal:      z.number().nonnegative(),
+  shippingFee:   z.number().nonnegative().optional(),
+  total:         z.number().positive(),
+  paymentMethod: z.string().min(1).max(50),
 });
 
 export async function POST(request: NextRequest) {
@@ -58,6 +51,7 @@ export async function POST(request: NextRequest) {
       orderId = ref.id;
 
       // Increment sold counts (non-blocking)
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { FieldValue } = require("firebase-admin/firestore");
       for (const item of data.items) {
         db.collection("products").doc(item.productId)

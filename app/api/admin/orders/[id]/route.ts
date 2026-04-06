@@ -4,11 +4,13 @@ import { createHmac } from "crypto";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!isAdminAuthenticated(request)) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
+
+  const { id } = await params;
 
   try {
     const { status } = await request.json();
@@ -21,7 +23,7 @@ export async function PATCH(
     const { getAdminDb } = await import("@/lib/firebase-admin");
     const db = getAdminDb();
 
-    const orderRef = db.collection("orders").doc(params.id);
+    const orderRef = db.collection("orders").doc(id);
     const orderSnap = await orderRef.get();
 
     if (!orderSnap.exists) {
@@ -38,11 +40,11 @@ export async function PATCH(
 
       downloadLinks = order.items.map((item: any) => {
         const token = createHmac("sha256", secret)
-          .update(`${params.id}:${item.productId}`)
+          .update(`${id}:${item.productId}`)
           .digest("hex")
           .substring(0, 32);
 
-        const downloadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/download?token=${token}&orderId=${params.id}&productId=${item.productId}`;
+        const downloadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/download?token=${token}&orderId=${id}&productId=${item.productId}`;
 
         return {
           productId: item.productId,
@@ -73,16 +75,18 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!isAdminAuthenticated(request)) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
+  const { id } = await params;
+
   try {
     const { getAdminDb } = await import("@/lib/firebase-admin");
     const db = getAdminDb();
-    const snap = await db.collection("orders").doc(params.id).get();
+    const snap = await db.collection("orders").doc(id).get();
 
     if (!snap.exists) {
       return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });

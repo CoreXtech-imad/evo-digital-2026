@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .limit(20)
       .get();
 
-    const reviews = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const reviews = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
     return NextResponse.json({ reviews });
   } catch {
     return NextResponse.json({ reviews: [] });
@@ -69,9 +69,9 @@ export async function POST(request: NextRequest) {
       .where("productId", "==", data.productId)
       .get();
 
-    const reviews = allReviewsSnap.docs.map((d) => d.data());
+    const reviews = allReviewsSnap.docs.map((d: any) => d.data());
     const avgRating =
-      reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
 
     await db.collection("products").doc(data.productId).update({
       rating: Math.round(avgRating * 10) / 10,

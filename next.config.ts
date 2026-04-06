@@ -4,10 +4,19 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
 const appHost = appUrl ? (() => { try { return new URL(appUrl).host; } catch { return ""; } })() : "";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: [
+    "firebase-admin",
+    "@google-cloud/storage",
+    "@google-cloud/firestore",
+    "google-auth-library",
+    "gcp-metadata",
+  ],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "unsplash.com" },
+      { protocol: "https", hostname: "storage.googleapis.com" },
       { protocol: "https", hostname: "*.googleapis.com" },
     ],
     formats: ["image/avif", "image/webp"],

@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://evo-digital.vercel.app";
 
   // Static pages
-  const staticPages = [
+  const staticPages: { url: string; priority: string; changefreq: string; lastmod?: string }[] = [
     { url: "/", priority: "1.0", changefreq: "daily" },
     { url: "/shop", priority: "0.9", changefreq: "daily" },
     { url: "/checkout", priority: "0.7", changefreq: "monthly" },
   ];
 
   // Try to fetch products from DB
-  let productPages: { url: string; priority: string; changefreq: string; lastmod?: string }[] = [];
+  let productPages: typeof staticPages = [];
   try {
     const { getAdminDb } = await import("@/lib/firebase-admin");
     const db = getAdminDb();
     const snap = await db.collection("products").get();
-    productPages = snap.docs.map((d) => {
+    productPages = snap.docs.map((d: any) => {
       const data = d.data();
       return {
         url: `/products/${data.slug}`,

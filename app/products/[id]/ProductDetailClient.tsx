@@ -3,8 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/ui/ProductCard";
 import { useCart } from "@/hooks/useCart";
 import { formatDZD, getDiscountPercentage } from "@/lib/utils";
@@ -13,7 +11,7 @@ import toast from "react-hot-toast";
 import {
   ShoppingCart, Download, Star, Shield, Zap, Package,
   FileText, ChevronRight, Flame, CheckCircle, Users,
-  Heart, Share2, Copy,
+  Heart, Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -66,9 +64,7 @@ export default function ProductDetailClient({ product, related }: Props) {
   };
 
   return (
-    <>
-      <Navbar />
-      <main className="pt-24 min-h-screen">
+    <main className="pt-24 min-h-screen">
         {/* Background orbs */}
         <div className="evo-orb" style={{ width: 400, height: 400, top: "10%", right: "5%", background: "radial-gradient(circle, rgba(170,139,255,0.06) 0%, transparent 70%)" }} />
 
@@ -315,7 +311,5 @@ export default function ProductDetailClient({ product, related }: Props) {
           )}
         </div>
       </main>
-      <Footer />
-    </>
   );
 }

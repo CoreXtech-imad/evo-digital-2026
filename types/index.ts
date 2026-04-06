@@ -54,13 +54,14 @@ export interface OrderItem {
 }
 
 export interface CustomerInfo {
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  address: string;
-  wilaya: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  address?: string;
+  wilaya?: string;
   notes?: string;
+  [key: string]: string | undefined;
 }
 
 export interface Order {
@@ -69,9 +70,10 @@ export interface Order {
   items: OrderItem[];
   customer: CustomerInfo;
   subtotal: number;
+  shippingFee?: number;
   total: number;
   status: OrderStatus;
-  paymentMethod: "cod"; // Cash on Delivery only
+  paymentMethod: string;
   downloadLinks?: DownloadLink[];
   webhookSent?: boolean;
   createdAt: string;

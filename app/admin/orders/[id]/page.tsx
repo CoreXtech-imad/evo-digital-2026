@@ -79,7 +79,7 @@ const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: ["pending"],
 };
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
+export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [order, setOrder] = useState<Order>(demoOrder);
   const [updating, setUpdating] = useState(false);

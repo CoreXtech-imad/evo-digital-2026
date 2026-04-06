@@ -6,19 +6,25 @@ import { useCart } from "@/hooks/useCart";
 import { cn } from "@/lib/utils";
 import CartDrawer from "./CartDrawer";
 import { Menu, X, ShoppingCart, Search, Zap } from "lucide-react";
+import Image from "next/image";
+import type { StoreSettings } from "@/lib/store-types";
+import { DEFAULT_STORE } from "@/lib/store-types";
 
 const navLinks = [
-  { label: "Boutique", href: "/shop" },
+  { label: "Boutique",  href: "/shop" },
   { label: "Logiciels", href: "/shop?category=software" },
   { label: "Templates", href: "/shop?category=templates" },
-  { label: "Ebooks", href: "/shop?category=ebooks" },
+  { label: "Ebooks",    href: "/shop?category=ebooks" },
 ];
 
+let _cachedStore: StoreSettings | null = null;
+
 export default function Navbar() {
-  const { count, items } = useCart();
-  const [scrolled, setScrolled] = useState(false);
+  const { count } = useCart();
+  const [scrolled, setScrolled]     = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [cartOpen, setCartOpen]     = useState(false);
+  const [store, setStore]           = useState<StoreSettings>(_cachedStore ?? DEFAULT_STORE);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -26,35 +32,45 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (_cachedStore) return;
+    fetch("/api/settings/store")
+      .then((r) => r.json())
+      .then((data: StoreSettings) => { _cachedStore = data; setStore(data); })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
-      <nav
-        className={cn(
-          "fixed top-0 w-full z-50 transition-all duration-500",
-          scrolled
-            ? "bg-background/80 backdrop-blur-glass shadow-glass border-b border-white/5"
-            : "bg-transparent"
-        )}
-      >
+      <nav className={cn(
+        "fixed top-0 w-full z-50 transition-all duration-500",
+        scrolled ? "bg-background/80 backdrop-blur-glass shadow-glass border-b border-white/5" : "bg-transparent"
+      )}>
         <div className="max-w-screen-xl mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg hero-gradient flex items-center justify-center shadow-neon-primary group-hover:shadow-neon-primary-lg transition-all">
-              <Zap className="w-4 h-4 text-on-primary" fill="currentColor" />
-            </div>
-            <span className="text-xl font-black font-headline gradient-text tracking-tight">
-              Evo Digital
-            </span>
+            {store.logoUrl ? (
+              <div className="h-8 w-auto flex items-center">
+                <Image src={store.logoUrl} alt={store.storeName} height={32} width={120}
+                  className="h-8 w-auto object-contain" />
+              </div>
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-lg hero-gradient flex items-center justify-center shadow-neon-primary group-hover:shadow-neon-primary-lg transition-all">
+                  <Zap className="w-4 h-4 text-on-primary" fill="currentColor" />
+                </div>
+                <span className="text-xl font-black font-headline gradient-text tracking-tight">
+                  {store.storeName}
+                </span>
+              </>
+            )}
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="px-4 py-2 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors duration-200 rounded-lg hover:bg-white/5"
-              >
+              <Link key={link.href} href={link.href}
+                className="px-4 py-2 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors duration-200 rounded-lg hover:bg-white/5">
                 {link.label}
               </Link>
             ))}
@@ -62,19 +78,11 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <Link
-              href="/shop"
-              className="hidden md:flex p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-white/5"
-              aria-label="Rechercher"
-            >
+            <Link href="/shop" className="hidden md:flex p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-white/5" aria-label="Rechercher">
               <Search className="w-5 h-5" />
             </Link>
-
-            <button
-              onClick={() => setCartOpen(true)}
-              className="relative p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-white/5"
-              aria-label="Panier"
-            >
+            <button onClick={() => setCartOpen(true)}
+              className="relative p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-white/5" aria-label="Panier">
               <ShoppingCart className="w-5 h-5" />
               {count > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 hero-gradient rounded-full text-xs font-bold text-on-primary flex items-center justify-center shadow-neon-primary animate-pulse-glow">
@@ -82,16 +90,8 @@ export default function Navbar() {
                 </span>
               )}
             </button>
-
-            <Link href="/shop" className="hidden md:block btn-primary text-sm ml-2">
-              Explorer
-            </Link>
-
-            {/* Mobile menu toggle */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors"
-            >
+            <Link href="/shop" className="hidden md:block btn-primary text-sm ml-2">Explorer</Link>
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -101,19 +101,13 @@ export default function Navbar() {
         {mobileOpen && (
           <div className="md:hidden glass-panel border-t border-white/5 px-6 py-4 space-y-1">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-3 text-on-surface-variant hover:text-primary transition-colors rounded-xl hover:bg-white/5 font-medium"
-              >
+              <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
+                className="block px-4 py-3 text-on-surface-variant hover:text-primary transition-colors rounded-xl hover:bg-white/5 font-medium">
                 {link.label}
               </Link>
             ))}
             <div className="pt-2">
-              <Link href="/shop" className="btn-primary w-full text-center block">
-                Explorer la Boutique
-              </Link>
+              <Link href="/shop" className="btn-primary w-full text-center block">Explorer la Boutique</Link>
             </div>
           </div>
         )}
